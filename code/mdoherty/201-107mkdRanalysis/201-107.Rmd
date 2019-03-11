@@ -1,0 +1,175 @@
+---
+output:
+  pdf_document: 
+    keep_tex: yes
+  md_document: default
+  html_document: default
+---
+
+```{r setup, echo=TRUE, include=FALSE}
+#settings for pdf/doc/html generation
+knitr::opts_chunk$set("echo" = FALSE)
+knitr::opts_chunk$set("tidy" = TRUE)
+knitr::opts_chunk$set("eval" = TRUE)
+knitr::opts_chunk$set("warning" = FALSE)
+knitr::opts_chunk$set("message" = FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=60),tidy=TRUE)
+knitr::opts_chunk$set("cache" = FALSE) 
+
+#loads packages used for analysis and rendering
+deps = c("AUCRF","pROC", "vegan", "dplyr", 'knitr', "gridExtra", "grid", "xtable", "devtools", "pgirmess", "scales", "tidyr", "ggplot2", "Hmisc", "cowplot", "rmarkdown", "knitcitations", "ggpubr", "car", "ggsignif", "formatR", "tinytex", "rmarkdown");
+for (dep in deps){
+	if (dep %in% installed.packages()[,"Package"] == FALSE){
+		install.packages(as.character(dep), quiet=TRUE);
+	}
+	library(dep, verbose=FALSE, character.only=TRUE)
+} 
+```
+
+```{r data, echo=TRUE}
+#set random seed start for consistant results
+set.seed(123) 
+#call data file
+longformdata <- read.table("201-107_DATAANALYSIS_longform_Rreadable.txt", header = T, sep = "\t") 
+#remove unneeded data fields for analysis
+data <- subset(longformdata, select = c("TxSamp", "Tx", "Matrix", "Time_hr", "analyte", "Conc_nM")) 
+#order levlels of analyte Pro>CDV>CDVPP for figure generation
+data$analyte <- ordered(data$analyte, levels = c("Prodrug", "CDV", "PP")) 
+#rename the levels
+levels(data$analyte) <-  c("Prodrug", "CDV", "CDV-PP") 
+#order the test articles for figure generation
+data$Tx <- ordered(data$Tx, levels = c("NPP669", "NPP666", "NPP663", "CDV", "CMX001", "USC505")) 
+#pull info from TxSamp column to indicate time collected and if sample is dose stability (ds), from medium (med), or from lysate (lys) and creates a new column "SampleType"
+data$SampleType <- gsub(".*_(T\\d+_\\w+)\\d+_\\w+","\\1", data$TxSamp)
+#volume of lysate in mL
+lysate_mL <- 0.333 
+#volume of media in mL
+media_mL <- 10 
+
+#the following funtion converts nanomolar to nanomoles
+Nanomol <- function(x){
+  nmol <- ifelse(data$Matrix=="media", (x/1000*media_mL), (x/1000*lysate_mL))
+return(nmol)
+}
+#use above function to convert concentration to raw nanomoles for each sample in a new column
+data$Nanomol <- Nanomol(data$Conc_nM) 
+#convert nanomoles to picomoles for each sample in a new column
+data$Picomol <- data$Nanomol*1000 
+
+#show structure of data and breakdowns by column
+summary(data) 
+
+#select all data with lysate as the matrix to determine analyte per cells
+lysate <- data[data$Matrix=="lysate",] 
+#call in the cell count data
+cellcountsdf <- read.table("201-107_rawcellcounts.txt", header = T, sep="\t") 
+
+#the following function coverts the raw hempocytometer counts to cells per flask
+cells_per_flask <- function(rawcells){
+  cellsperflask <- rawcells/4*2*10000*5
+  return(cellsperflask)
+} 
+#use above function to add cells per flask column to cell count dataframe
+cellcountsdf$cellsperflask <- cells_per_flask(cellcountsdf$rawcells)
+#calculate the mean cell count by treatment group as a new dataframe
+avecellcounts <- as.data.frame(cellcountsdf%>%group_by(Tx)%>%summarise(meancells = mean(cellsperflask))) 
+#summary of cell count table
+summary(cellcountsdf) 
+#average counts by group
+avecellcounts
+#combine the lysate data with average cell count data by group
+lysate <- merge(lysate, avecellcounts, by="Tx") 
+#calculate picomole per 10^6 cells for each sample
+lysate$pmolPERmillCell <- lysate$Picomol/(lysate$meancells/1000000)
+
+#summary of lysate table
+summary(lysate) 
+#calculate average picomoles per 10^6 cells by treatment group
+avepmolpcell <- lysate %>% group_by(Tx, analyte)%>%summarise(meanper = mean(pmolPERmillCell), sd=(sd(pmolPERmillCell))) 
+#show average picomole per 10^6 cells by gorup
+avepmolpcell
+```
+
+```{r anova, echo=TRUE}
+#isolate prodrug samples in lysate for statistical analysis
+lys_pro <- lysate[lysate$analyte=="Prodrug",] 
+#isolate CDV samples in lysate for statistical analysis
+lys_cdv <- lysate[lysate$analyte=="CDV",] 
+#isolate CDV-PP samples in lysate for statistical analysis
+lys_pp <- lysate[lysate$analyte=="CDV-PP",] 
+
+set.seed(123)
+#verify normal distribution
+norm_pp <- leveneTest(pmolPERmillCell~Tx, lys_pp) 
+#perform anova comparing picomoles per 10^6 cells by treatment group
+aov_pp <- aov(pmolPERmillCell~Tx, lys_pp) 
+#anova results table
+summary(aov_pp) 
+#performs Tukey post-hoc test for multiple comparisions and adjusts p-values accordingly, same for the below anovas
+mct_pp <- TukeyHSD(aov_pp) 
+#display multiple comparison results
+mct_pp
+
+#anova steps same as above but for CDV and Prodrug
+set.seed(123)
+norm_cdv <- leveneTest(pmolPERmillCell~Tx, lys_cdv)
+aov_cdv <- aov(pmolPERmillCell~Tx, lys_cdv)
+summary(aov_cdv)
+mct_cdv <- TukeyHSD(aov_cdv)
+mct_cdv
+
+set.seed(123)
+norm_pro <- leveneTest(pmolPERmillCell~Tx, lys_pro)
+aov_pro <- aov(pmolPERmillCell~Tx, lys_pro)
+summary(aov_pro)
+mct_pro <- TukeyHSD(aov_pro)
+mct_pro
+
+#figure building
+# label columns for statistical comparisons from Tukey tests
+stats_labs <- data.frame(
+  Tx = factor(rep(c("NPP669","NPP666","NPP663","CDV","CMX001","USC505"), 3)),
+  analyte = factor(c(rep("Prodrug", 6), rep("CDV",6), rep("CDV-PP", 6))),
+  labs = factor(c("bcf","ace","abe","sdgsna","bcf","ae","bcdef","acdef","ab","abef","abd","abd","bcdef","acdef","abd","abcef","abdf","abde")))
+
+#annotate the column labels with letter for statistical comparisons
+ann_text <- data.frame(
+  Tx = factor(c("NPP669","NPP666","NPP663","CDV","CMX001","USC505")),
+  labs = factor(c("NPP-669\n(a)","NPP-666\n(b)","NPP-663\n(c)","CDV\n(d)","CMX-001\n(e)","USC-505\n(f)"))
+) 
+
+#label CDV-Prodrug as "na" since there isnt a prodrug
+noCDVpro <- data.frame(
+  Tx = "CDV",
+  analyte = "Prodrug",
+  y=20,
+  lab = "italic(na)") 
+
+#merge label datafram with avepmolcell dataframe for calling figure labels
+labels <- merge(stats_labs, avepmolpcell, by=c("Tx","analyte"), all=T)
+```
+
+```{r picopermillcell_fig, echo=TRUE}
+set.seed(123)
+#call color pallette package for figure
+library(RColorBrewer) 
+#select 3 complementary colors for 3 analytes from "Pastel1" color pallette
+myColors <- brewer.pal(3,"Pastel1") 
+#assign a color to an analyte
+names(myColors) <- levels(lysate$analyte) 
+#instruct ggplot how to color columns
+colScale <- scale_fill_manual(name = "analyte",values = myColors)
+
+#figure building: ggplot calls data and variables to display, stat_summary selects bar chart display and errorbars using mean + SD, scale_x and geom_text add labels to x axis, scale_y does same for y axis, facet_grid breaks up figure by analyte and places the facet label on the left, geom_text labels CDV-Prodrug as na, colScale colors the columns and legend, theme_bw() instructs how figure background looks, remaining theme() calls remove the legend bolds the facet labels, titles the x axis and y axis
+p <- ggplot(lysate, aes(Tx, pmolPERmillCell, fill=analyte))+stat_summary(geom = "bar", fun.y = mean, position = "dodge", color="black")+stat_summary(geom = "errorbar", fun.ymin = function(x) mean(x) - sd(x), fun.ymax = function(x) mean(x) + sd(x), position = "dodge", width=0.5)+scale_x_discrete(breaks=ann_text$Tx, labels=ann_text$labs)+geom_text(labels, mapping = aes(Tx,y=(meanper+sd+20),label=labs))+scale_y_continuous(limits= c(0,425),expand = c(0,0))+facet_grid(analyte~., switch="both")+geom_text(noCDVpro, mapping = aes(x=Tx,y=y, label=lab),parse=T)+colScale+theme_bw()+theme(legend.position="none")+theme(strip.text = element_text(face="bold"))+labs(x="Treatment", y=bquote(paste("Picomoles Analyte per 10"^"6"," HFF-1 cells")))
+
+
+```
+
+```{r pdf, include=FALSE}
+#create pdf of figure
+pdf("picopercellWITHstats.pdf", width = 8, height = 6)
+#render figure
+p
+dev.off()
+```
