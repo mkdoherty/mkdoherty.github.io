@@ -57,10 +57,12 @@ a {
       margin-left: 0; } }
 
 .page-header {
-  color: #fff;
+  color: black;
   text-align: center;
-  background-color: #159957;
-  background-image: linear-gradient(120deg, #155799, #159957); }
+  background-image: url("../images/sporestain_head.jpg");
+	background-repeat: no-repeat; /* Do not repeat the image */
+  background-size: cover; /* Resize the background image to cover the entire container */
+}
 
 @media screen and (min-width: 64em) {
   .page-header {

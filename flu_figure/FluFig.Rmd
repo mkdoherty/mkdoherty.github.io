@@ -1,0 +1,21 @@
+---
+title: "FluFig"
+author: "Matt Doherty"
+date: "3/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+source('code/knitr_settings.R')
+source('code/flufig/flufigure_byweeks.R')
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+pflu2
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
