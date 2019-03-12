@@ -1,21 +1,27 @@
 ---
-title: "FluFig"
-author: "Matt Doherty"
-date: "3/7/2019"
-output: html_document
+output:
+html_document:
+includes:
+template: "template.html"
+css: "stylesheets/stylesheet.css"
+in_header: "header.html"
+before_body: "flunav.html"
+after_body: "footer.html"
+
 ---
+
+##FluTracker
 
 ```{r setup, include=FALSE}
 source('code/knitr_settings.R')
-source('code/flufig/flufigure_byweeks.R')
+source('code/flufigure_byweeks.R')
 ```
+This was created using R studio to make an Rmarkdown (Rmd) document, which embeds R code in chunks.
 
-## Including Plots
+This allows you to embed plots created using R code and the ggplot R package. For example, I used data from the CDC (using package cdcfluview) to track flu-like illness (ILI) and deaths due to pneumonia and flu (P&I) since the 2009 H1N1 swine flu pandemic.
 
-You can also embed plots, for example:
+As you can see, 2017-18 was a rough flu season. Please get your flu shot! While each year's vaccine is variable in efficacy, partial protection is better than no protection as vaccinated individuals have experienced less severe flu in "off-years".
 
-```{r pressure, echo=FALSE}
+```{r pressure, echo=FALSE, fig.width=12, fig.height=6}
 pflu2
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

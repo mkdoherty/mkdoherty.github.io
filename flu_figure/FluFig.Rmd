@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 source('code/knitr_settings.R')
-source('code/flufig/flufigure_byweeks.R')
+source('/code/flufig/flufigure_byweeks.R')
 ```
 
 ## Including Plots
