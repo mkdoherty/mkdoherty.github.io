@@ -1,12 +1,10 @@
 ---
 output:
 html_document:
+template: template.html
 includes:
-template: "template.html"
-css: "stylesheets/stylesheet.css"
-in_header: "header.html"
-before_body: "flunav.html"
-after_body: "footer.html"
+before_body: fluheader.html
+after_body: footer.html
 
 ---
 
