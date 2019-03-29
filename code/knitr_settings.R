@@ -26,3 +26,4 @@ inline_hook <- function(x){
 	}
 }
 knitr::knit_hooks$set(inline=inline_hook)
+
