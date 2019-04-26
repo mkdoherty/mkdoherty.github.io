@@ -2,7 +2,7 @@
 
 <head>
 <style type="text/css">
-.knitr .inline {
+.inline {
   background-color: #f7f7f7;
   border:solid 1px #B0B0B0;
 }
@@ -23,13 +23,13 @@
 .source {
   background-color: #f5f5f5;
 }
-.rimage .left {
+.left {
   text-align: left;
 }
-.rimage .right {
+.right {
   text-align: right;
 }
-.rimage .center {
+.center {
   text-align: center;
 }
 .hl.num {
@@ -72,11 +72,27 @@
 
 <div class="chunk" id="unnamed-chunk-1"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">source</span><span class="hl std">(</span><span class="hl str">'code/knitr_settings.R'</span><span class="hl std">)</span>
 </pre></div>
+<div class="warning"><pre class="knitr r">## Warning in file(filename, &quot;r&quot;, encoding = encoding): cannot open file
+## 'code/knitr_settings.R': No such file or directory
+</pre></div>
+<div class="error"><pre class="knitr r">## Error in file(filename, &quot;r&quot;, encoding = encoding): cannot open the connection
+</pre></div>
 </div></div>
 
 <p>You can also embed plots, for example:</p>
 
-<div class="chunk" id="unnamed-chunk-2"><div class="rimage default"><img src="figure/unnamed-chunk-2-1.png" title="plot of chunk unnamed-chunk-2" alt="plot of chunk unnamed-chunk-2" class="plot" /></div></div>
+<div class="chunk" id="unnamed-chunk-2"><div class="rcode"><div class="source"><pre class="knitr r"><span class="hl kwd">source</span><span class="hl std">(</span><span class="hl str">'code/flufig/flufigure_byweeks.R'</span><span class="hl std">)</span>
+</pre></div>
+<div class="warning"><pre class="knitr r">## Warning in file(filename, &quot;r&quot;, encoding = encoding): cannot open file
+## 'code/flufig/flufigure_byweeks.R': No such file or directory
+</pre></div>
+<div class="error"><pre class="knitr r">## Error in file(filename, &quot;r&quot;, encoding = encoding): cannot open the connection
+</pre></div>
+<div class="source"><pre class="knitr r"><span class="hl std">pflu2</span>
+</pre></div>
+<div class="error"><pre class="knitr r">## Error in eval(expr, envir, enclos): object 'pflu2' not found
+</pre></div>
+</div></div>
 
 </body>
 </html>
